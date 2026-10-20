@@ -3,9 +3,12 @@
  */
 package com.marklogic.flux.impl.importdata;
 
+import com.marklogic.flux.api.ExtractedTextFormat;
 import com.marklogic.flux.impl.AbstractOptionsTest;
 import com.marklogic.spark.Options;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import picocli.CommandLine;
 
 import java.util.Map;
@@ -44,6 +47,7 @@ class ImportFilesOptionsTest extends AbstractOptionsTest {
             "--uri-template-warn-on-missing-field",
             "--streaming",
             "--extract-text",
+            "--extracted-text-format", "html",
             "--extracted-text-document-type", "XML",
             "--extracted-text-collections", "e1,e2",
             "--extracted-text-permissions", "e1,read,e2,update",
@@ -93,6 +97,7 @@ class ImportFilesOptionsTest extends AbstractOptionsTest {
             Options.WRITE_URI_TEMPLATE_WARN_ON_MISSING_FIELD, "true",
             Options.STREAM_FILES, "true",
             Options.WRITE_EXTRACTED_TEXT, "true",
+            Options.WRITE_EXTRACTED_TEXT_FORMAT, "HTML",
             Options.WRITE_EXTRACTED_TEXT_DOCUMENT_TYPE, "XML",
             Options.WRITE_EXTRACTED_TEXT_COLLECTIONS, "e1,e2",
             Options.WRITE_EXTRACTED_TEXT_PERMISSIONS, "e1,read,e2,update",
@@ -105,6 +110,89 @@ class ImportFilesOptionsTest extends AbstractOptionsTest {
             "spark.someprop", "somevalue",
             "other.prop", "othervalue"
         );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"text", "TEXT", "html", "HTML"})
+    void extractedTextFormat(String format) {
+        ImportFilesCommand command = new ImportFilesCommand();
+        new CommandLine(command).setCaseInsensitiveEnumValuesAllowed(true)
+            .parseArgs("--path", "anywhere", "--extract-text", "--extracted-text-format", format);
+        assertEquals(format.toUpperCase(java.util.Locale.ROOT),
+            command.getWriteParams().makeOptions().get(Options.WRITE_EXTRACTED_TEXT_FORMAT));
+    }
+
+    @Test
+    void extractedTextFormatDefaultsToConnectorBehavior() {
+        ImportFilesCommand command = new ImportFilesCommand();
+        new CommandLine(command).parseArgs("--path", "anywhere", "--extract-text");
+        assertFalse(command.getWriteParams().makeOptions().containsKey(Options.WRITE_EXTRACTED_TEXT_FORMAT));
+    }
+
+    @Test
+    void invalidExtractedTextFormat() {
+        CommandLine.ParameterException ex = assertThrows(CommandLine.ParameterException.class,
+            () -> new CommandLine(new ImportFilesCommand()).parseArgs("--path", "anywhere", "--extracted-text-format", "pdf"));
+        assertTrue(ex.getMessage().contains("--extracted-text-format"));
+    }
+
+    @Test
+    void extractedTextFormatApi() {
+        ImportFilesCommand.WriteGenericDocumentsParams params = new ImportFilesCommand.WriteGenericDocumentsParams();
+        params.extractText().extractedTextFormat(ExtractedTextFormat.HTML);
+        assertOptions(params.makeOptions(),
+            Options.WRITE_EXTRACTED_TEXT, "true",
+            Options.WRITE_EXTRACTED_TEXT_FORMAT, "HTML");
+        params.extractedTextFormat(ExtractedTextFormat.TEXT);
+        assertEquals("TEXT", params.makeOptions().get(Options.WRITE_EXTRACTED_TEXT_FORMAT));
+        assertThrows(NullPointerException.class, () -> params.extractedTextFormat(null));
+    }
+
+    @Test
+    void extractedTextAggregateOptions() {
+        ImportFilesCommand command = new ImportFilesCommand();
+        new CommandLine(command).setCaseInsensitiveEnumValuesAllowed(true).parseArgs(
+            "--path", "anywhere", "--extract-text",
+            "--extracted-text-format", "html",
+            "--extracted-text-document-type", "xml",
+            "--extracted-text-aggregate-element", "div",
+            "--extracted-text-aggregate-namespace", "http://www.w3.org/1999/xhtml",
+            "--extracted-text-aggregate-attribute", "class=sheet",
+            "--extracted-text-aggregate-uri-attribute", "id",
+            "--extracted-text-aggregate-envelope");
+        assertOptions(command.getWriteParams().makeOptions(),
+            Options.WRITE_EXTRACTED_TEXT_AGGREGATE_ELEMENT, "div",
+            Options.WRITE_EXTRACTED_TEXT_AGGREGATE_NAMESPACE, "http://www.w3.org/1999/xhtml",
+            Options.WRITE_EXTRACTED_TEXT_AGGREGATE_ATTRIBUTE, "class=sheet",
+            Options.WRITE_EXTRACTED_TEXT_AGGREGATE_URI_ATTRIBUTE, "id",
+            Options.WRITE_EXTRACTED_TEXT_AGGREGATE_ENVELOPE, "true");
+    }
+
+    @Test
+    void extractedTextAggregateOptionsNotSetByDefault() {
+        ImportFilesCommand command = new ImportFilesCommand();
+        new CommandLine(command).parseArgs("--path", "anywhere", "--extract-text");
+        Map<String, String> options = command.getWriteParams().makeOptions();
+        assertTrue(options.keySet().stream().noneMatch(key -> key.startsWith("spark.marklogic.write.extractedText.aggregate.")));
+    }
+
+    @Test
+    void extractedTextAggregateApi() {
+        ImportFilesCommand.WriteGenericDocumentsParams params = new ImportFilesCommand.WriteGenericDocumentsParams();
+        params.extractText()
+            .extractedTextFormat(ExtractedTextFormat.HTML)
+            .extractedTextAggregateElement(null, "div")
+            .extractedTextAggregateAttribute("class", "sheet")
+            .extractedTextAggregateUriAttribute("id")
+            .extractedTextAggregateEnvelope();
+        Map<String, String> options = params.makeOptions();
+        assertOptions(options,
+            Options.WRITE_EXTRACTED_TEXT_AGGREGATE_ELEMENT, "div",
+            Options.WRITE_EXTRACTED_TEXT_AGGREGATE_ATTRIBUTE, "class=sheet",
+            Options.WRITE_EXTRACTED_TEXT_AGGREGATE_URI_ATTRIBUTE, "id",
+            Options.WRITE_EXTRACTED_TEXT_AGGREGATE_ENVELOPE, "true");
+        assertFalse(options.containsKey(Options.WRITE_EXTRACTED_TEXT_AGGREGATE_NAMESPACE),
+            "A null namespace lets the connector default to XHTML");
     }
 
     @Test

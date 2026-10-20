@@ -157,6 +157,66 @@ behavior:
 The `content` in the document contains the extracted text. The `extracted-metadata` contains each metadata key and value
 produced by Apache Tika.
 
+### Choosing plain text or HTML content
+
+Extracted content is plain text by default. To preserve the structure that Apache Tika extracts as XHTML, use:
+
+    --extract-text --extracted-text-format html
+
+Use `--extracted-text-format text` to explicitly select plain text. Values are case-insensitive; other values are
+rejected. The format option only applies when `--extract-text` is enabled.
+
+With `--extracted-text-document-type XML`, the XHTML is inserted into the document's `content` element as XML
+elements (a root `html` element in the `http://www.w3.org/1999/xhtml` namespace), so it can be queried and indexed as
+structure. If the XHTML cannot be parsed, it is stored as text and a warning is logged. With JSON documents, `content`
+is a string containing the serialized XHTML. The URI and metadata are unchanged. Downstream splitting, classification,
+and embedding of extracted content will receive the selected representation, including markup when HTML is selected.
+
+The Java API provides the same selection via `.extractText().extractedTextFormat(ExtractedTextFormat.HTML)`.
+This option requires the updated MarkLogic Spark connector (`3.1.3-SNAPSHOT` for local development); publish the
+companion connector checkout to Maven Local before building Flux.
+
+### Splitting extracted HTML into records
+
+Instead of writing one extracted text document per file, the extracted XHTML can be split into individual records using
+the same streaming splitter as the `import-aggregate-xml-files` command. For example, Tika produces one
+`<div class="sheet">` element per Excel worksheet, so the following writes one document per worksheet:
+
+    --extract-text
+    --extracted-text-format html
+    --extracted-text-document-type XML
+    --extracted-text-aggregate-element div
+    --extracted-text-aggregate-attribute class=sheet
+
+The following options control how records are produced:
+
+| Option | Description |
+| --- | --- |
+| `--extracted-text-aggregate-element` | Local name of the record element. Only the outermost match is a record; nested matches stay inside it. |
+| `--extracted-text-aggregate-namespace` | Namespace of the record element; defaults to the XHTML namespace. |
+| `--extracted-text-aggregate-attribute` | Only elements having this exact attribute value, given as `name=value`, are records. Without it, Tika's `<div class="package-entry">` elements for embedded files would also become records. |
+| `--extracted-text-aggregate-uri-attribute` | Use the value of this attribute in each record URI instead of the record's position. The value must be present and unique within each file, otherwise an error is thrown. |
+| `--extracted-text-aggregate-envelope` | Wrap each record in an envelope containing `source-uri` (unless `--extracted-text-drop-source` is used), `record-index`, the record under `content`, and `extracted-metadata`. |
+
+Records replace the single extracted text document. Each record has a URI of `{sourceUri}-extracted-{position}.xml`,
+with position starting at 1, or `{sourceUri}-extracted-{attributeValue}.xml` when
+`--extracted-text-aggregate-uri-attribute` is used. Records receive the `--extracted-text-collections` and
+`--extracted-text-permissions` values. Without the envelope, each record document is the record element itself, such as
+`<div xmlns="http://www.w3.org/1999/xhtml" class="sheet">`.
+
+The record options require `--extracted-text-format html` and `--extracted-text-document-type XML`, and cannot be
+combined with the `--splitter-*` options. If no element matches in a file, a warning is logged and the single extracted
+text document is written for that file instead.
+
+When a classifier is configured with the `--classifier-*` options, each record is classified individually by Semaphore.
+The text of each record is sent as one article in a multi-article request, batched according to
+`--classifier-batch-size`, and the response is added as a `classification` element in that record's envelope. The file
+as a whole is not sent to Semaphore when records are produced. Because a record without an envelope has no place to
+hold its classification, `--extracted-text-aggregate-envelope` is required when a classifier is configured.
+
+The Java API provides the same options via `extractedTextAggregateElement`, `extractedTextAggregateAttribute`,
+`extractedTextAggregateUriAttribute`, and `extractedTextAggregateEnvelope`.
+
 If you do not want Flux to write the file to a separate document but only want the extracted text document written,
 include the following option:
 
@@ -203,4 +263,3 @@ To limit the maximum number of entries processed from a single ZIP file:
 
 A value of `100000` is a reasonable starting point for most use cases. Set to `0` or any value less than `1` to
 disable.
-

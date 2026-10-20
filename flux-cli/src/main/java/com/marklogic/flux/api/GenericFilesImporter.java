@@ -28,6 +28,13 @@ public interface GenericFilesImporter extends Executor<GenericFilesImporter> {
         WriteGenericDocumentsOptions extractText();
 
         /**
+         * Select plain text (the default) or Tika XHTML for the extracted document's content.
+         *
+         * @param format the extracted content format; must not be null
+         */
+        WriteGenericDocumentsOptions extractedTextFormat(ExtractedTextFormat format);
+
+        /**
          * @param documentType can be "json" or "xml"; defaults to "json" if not specified or if an unrecognized value is provided.
          * @since 1.4.0
          */
@@ -47,6 +54,33 @@ public interface GenericFilesImporter extends Executor<GenericFilesImporter> {
          * @since 1.3.0
          */
         WriteGenericDocumentsOptions extractedTextDropSource();
+
+        /**
+         * Split the extracted XHTML into records, writing one XML document per occurrence of the given element instead
+         * of a single extracted text document. Requires an extracted text format of HTML and an extracted text
+         * document type of "xml". Records are given URIs based on their position unless
+         * {@link #extractedTextAggregateUriAttribute(String)} is used.
+         *
+         * @param namespace optional namespace of the element; defaults to the XHTML namespace if null
+         * @param element   local name of the element, e.g. "div"
+         */
+        WriteGenericDocumentsOptions extractedTextAggregateElement(String namespace, String element);
+
+        /**
+         * Only split out record elements having an attribute with the given name and exact value, e.g. class=sheet.
+         */
+        WriteGenericDocumentsOptions extractedTextAggregateAttribute(String name, String value);
+
+        /**
+         * @param name attribute on each record element whose value is used in the record URI instead of its position;
+         *             the value must be present and unique within each source file
+         */
+        WriteGenericDocumentsOptions extractedTextAggregateUriAttribute(String name);
+
+        /**
+         * Wrap each record in an envelope containing the source URI, record index, and extracted metadata.
+         */
+        WriteGenericDocumentsOptions extractedTextAggregateEnvelope();
     }
 
     GenericFilesImporter from(Consumer<ReadGenericFilesOptions> consumer);

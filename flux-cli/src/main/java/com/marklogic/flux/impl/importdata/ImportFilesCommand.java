@@ -4,12 +4,14 @@
 package com.marklogic.flux.impl.importdata;
 
 import com.marklogic.flux.api.CompressionType;
+import com.marklogic.flux.api.ExtractedTextFormat;
 import com.marklogic.flux.api.GenericFilesImporter;
 import com.marklogic.flux.impl.OptionsUtil;
 import com.marklogic.spark.Options;
 import picocli.CommandLine;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 @CommandLine.Command(
@@ -119,6 +121,13 @@ public class ImportFilesCommand extends AbstractImportFilesCommand<GenericFilesI
         private boolean extractText;
 
         @CommandLine.Option(
+            names = "--extracted-text-format",
+            description = "Format of the extracted content: text (default) or html (Tika XHTML). " +
+                "Does not change the JSON/XML document type. " + OptionsUtil.VALID_VALUES_DESCRIPTION
+        )
+        private ExtractedTextFormat extractedTextFormat;
+
+        @CommandLine.Option(
             names = "--extracted-text-document-type",
             description = "Specifies the type of document to create with the extracted text. Defaults to 'json'; can be 'json' or 'xml'."
         )
@@ -143,6 +152,40 @@ public class ImportFilesCommand extends AbstractImportFilesCommand<GenericFilesI
         )
         private boolean extractedTextDropSource;
 
+        @CommandLine.Option(
+            names = "--extracted-text-aggregate-element",
+            description = "Split the extracted XHTML into records, writing one document per occurrence of this element " +
+                "instead of a single extracted text document. Requires '--extracted-text-format html' and " +
+                "'--extracted-text-document-type xml'; cannot be combined with splitter options."
+        )
+        private String extractedTextAggregateElement;
+
+        @CommandLine.Option(
+            names = "--extracted-text-aggregate-namespace",
+            description = "Namespace of the element specified by '--extracted-text-aggregate-element'; defaults to the XHTML namespace."
+        )
+        private String extractedTextAggregateNamespace;
+
+        @CommandLine.Option(
+            names = "--extracted-text-aggregate-attribute",
+            description = "Only split out elements having this attribute value, specified as name=value - e.g. class=sheet."
+        )
+        private String extractedTextAggregateAttribute;
+
+        @CommandLine.Option(
+            names = "--extracted-text-aggregate-uri-attribute",
+            description = "Name of an attribute on each record element whose value is used in the record's URI instead " +
+                "of the record's position. The value must be present and unique within each source file."
+        )
+        private String extractedTextAggregateUriAttribute;
+
+        @CommandLine.Option(
+            names = "--extracted-text-aggregate-envelope",
+            description = "Wrap each record in an envelope containing the source URI, record index, extracted metadata, " +
+                "and - when a classifier is configured - the record's own classification. Required when a classifier is configured."
+        )
+        private boolean extractedTextAggregateEnvelope;
+
         @Override
         public WriteGenericDocumentsOptions documentType(com.marklogic.flux.api.DocumentType documentType) {
             this.documentType = documentType;
@@ -154,16 +197,28 @@ public class ImportFilesCommand extends AbstractImportFilesCommand<GenericFilesI
             return OptionsUtil.addOptions(super.makeOptions(),
                 Options.WRITE_DOCUMENT_TYPE, documentType != null ? documentType.name() : null,
                 Options.WRITE_EXTRACTED_TEXT, extractText ? "true" : null,
+                Options.WRITE_EXTRACTED_TEXT_FORMAT, extractedTextFormat != null ? extractedTextFormat.name() : null,
                 Options.WRITE_EXTRACTED_TEXT_DOCUMENT_TYPE, extractedTextDocumentType,
                 Options.WRITE_EXTRACTED_TEXT_COLLECTIONS, extractedTextCollections,
                 Options.WRITE_EXTRACTED_TEXT_PERMISSIONS, extractedTextPermissions,
-                Options.WRITE_EXTRACTED_TEXT_DROP_SOURCE, extractedTextDropSource ? "true" : null
+                Options.WRITE_EXTRACTED_TEXT_DROP_SOURCE, extractedTextDropSource ? "true" : null,
+                Options.WRITE_EXTRACTED_TEXT_AGGREGATE_ELEMENT, extractedTextAggregateElement,
+                Options.WRITE_EXTRACTED_TEXT_AGGREGATE_NAMESPACE, extractedTextAggregateNamespace,
+                Options.WRITE_EXTRACTED_TEXT_AGGREGATE_ATTRIBUTE, extractedTextAggregateAttribute,
+                Options.WRITE_EXTRACTED_TEXT_AGGREGATE_URI_ATTRIBUTE, extractedTextAggregateUriAttribute,
+                Options.WRITE_EXTRACTED_TEXT_AGGREGATE_ENVELOPE, extractedTextAggregateEnvelope ? "true" : null
             );
         }
 
         @Override
         public WriteGenericDocumentsOptions extractText() {
             this.extractText = true;
+            return this;
+        }
+
+        @Override
+        public WriteGenericDocumentsOptions extractedTextFormat(ExtractedTextFormat format) {
+            this.extractedTextFormat = Objects.requireNonNull(format, "Extracted text format must not be null");
             return this;
         }
 
@@ -188,6 +243,31 @@ public class ImportFilesCommand extends AbstractImportFilesCommand<GenericFilesI
         @Override
         public WriteGenericDocumentsOptions extractedTextDropSource() {
             this.extractedTextDropSource = true;
+            return this;
+        }
+
+        @Override
+        public WriteGenericDocumentsOptions extractedTextAggregateElement(String namespace, String element) {
+            this.extractedTextAggregateNamespace = namespace;
+            this.extractedTextAggregateElement = element;
+            return this;
+        }
+
+        @Override
+        public WriteGenericDocumentsOptions extractedTextAggregateAttribute(String name, String value) {
+            this.extractedTextAggregateAttribute = name + "=" + value;
+            return this;
+        }
+
+        @Override
+        public WriteGenericDocumentsOptions extractedTextAggregateUriAttribute(String name) {
+            this.extractedTextAggregateUriAttribute = name;
+            return this;
+        }
+
+        @Override
+        public WriteGenericDocumentsOptions extractedTextAggregateEnvelope() {
+            this.extractedTextAggregateEnvelope = true;
             return this;
         }
     }
