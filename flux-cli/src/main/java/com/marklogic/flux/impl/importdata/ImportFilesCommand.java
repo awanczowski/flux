@@ -186,6 +186,28 @@ public class ImportFilesCommand extends AbstractImportFilesCommand<GenericFilesI
         )
         private boolean extractedTextAggregateEnvelope;
 
+        @CommandLine.Option(
+            names = "--extracted-text-aggregate-collections",
+            description = "Comma-delimited sequence of collection names to add to each record; defaults to the value of '--collections'."
+        )
+        private String extractedTextAggregateCollections;
+
+        @CommandLine.Option(
+            names = "--extracted-text-aggregate-permissions",
+            description = "Comma-delimited sequence of MarkLogic role names and capabilities to add to each record - " +
+                "e.g. role1,read,role2,update; defaults to the value of '--permissions'."
+        )
+        private String extractedTextAggregatePermissions;
+
+        @CommandLine.Option(
+            names = "--extracted-text-aggregate-keep-document",
+            description = "Also write the full extracted text document; each record then links to it via 'extracted-text-uri'. " +
+                "The full document defaults to the '--collections' and '--permissions' values unless " +
+                "'--extracted-text-collections' or '--extracted-text-permissions' are specified. " +
+                "By default, the records replace the full extracted text document."
+        )
+        private boolean extractedTextAggregateKeepDocument;
+
         @Override
         public WriteGenericDocumentsOptions documentType(com.marklogic.flux.api.DocumentType documentType) {
             this.documentType = documentType;
@@ -206,7 +228,10 @@ public class ImportFilesCommand extends AbstractImportFilesCommand<GenericFilesI
                 Options.WRITE_EXTRACTED_TEXT_AGGREGATE_NAMESPACE, extractedTextAggregateNamespace,
                 Options.WRITE_EXTRACTED_TEXT_AGGREGATE_ATTRIBUTE, extractedTextAggregateAttribute,
                 Options.WRITE_EXTRACTED_TEXT_AGGREGATE_URI_ATTRIBUTE, extractedTextAggregateUriAttribute,
-                Options.WRITE_EXTRACTED_TEXT_AGGREGATE_ENVELOPE, extractedTextAggregateEnvelope ? "true" : null
+                Options.WRITE_EXTRACTED_TEXT_AGGREGATE_ENVELOPE, extractedTextAggregateEnvelope ? "true" : null,
+                Options.WRITE_EXTRACTED_TEXT_AGGREGATE_COLLECTIONS, extractedTextAggregateCollections,
+                Options.WRITE_EXTRACTED_TEXT_AGGREGATE_PERMISSIONS, extractedTextAggregatePermissions,
+                Options.WRITE_EXTRACTED_TEXT_AGGREGATE_KEEP_DOCUMENT, extractedTextAggregateKeepDocument ? "true" : null
             );
         }
 
@@ -268,6 +293,24 @@ public class ImportFilesCommand extends AbstractImportFilesCommand<GenericFilesI
         @Override
         public WriteGenericDocumentsOptions extractedTextAggregateEnvelope() {
             this.extractedTextAggregateEnvelope = true;
+            return this;
+        }
+
+        @Override
+        public WriteGenericDocumentsOptions extractedTextAggregateCollections(String commaDelimitedCollections) {
+            this.extractedTextAggregateCollections = commaDelimitedCollections;
+            return this;
+        }
+
+        @Override
+        public WriteGenericDocumentsOptions extractedTextAggregatePermissionsString(String rolesAndCapabilities) {
+            this.extractedTextAggregatePermissions = rolesAndCapabilities;
+            return this;
+        }
+
+        @Override
+        public WriteGenericDocumentsOptions extractedTextAggregateKeepDocument() {
+            this.extractedTextAggregateKeepDocument = true;
             return this;
         }
     }

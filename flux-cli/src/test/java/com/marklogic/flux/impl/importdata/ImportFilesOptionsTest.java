@@ -159,13 +159,19 @@ class ImportFilesOptionsTest extends AbstractOptionsTest {
             "--extracted-text-aggregate-namespace", "http://www.w3.org/1999/xhtml",
             "--extracted-text-aggregate-attribute", "class=sheet",
             "--extracted-text-aggregate-uri-attribute", "id",
-            "--extracted-text-aggregate-envelope");
+            "--extracted-text-aggregate-envelope",
+            "--extracted-text-aggregate-collections", "r1,r2",
+            "--extracted-text-aggregate-permissions", "role1,read,role2,update",
+            "--extracted-text-aggregate-keep-document");
         assertOptions(command.getWriteParams().makeOptions(),
             Options.WRITE_EXTRACTED_TEXT_AGGREGATE_ELEMENT, "div",
             Options.WRITE_EXTRACTED_TEXT_AGGREGATE_NAMESPACE, "http://www.w3.org/1999/xhtml",
             Options.WRITE_EXTRACTED_TEXT_AGGREGATE_ATTRIBUTE, "class=sheet",
             Options.WRITE_EXTRACTED_TEXT_AGGREGATE_URI_ATTRIBUTE, "id",
-            Options.WRITE_EXTRACTED_TEXT_AGGREGATE_ENVELOPE, "true");
+            Options.WRITE_EXTRACTED_TEXT_AGGREGATE_ENVELOPE, "true",
+            Options.WRITE_EXTRACTED_TEXT_AGGREGATE_COLLECTIONS, "r1,r2",
+            Options.WRITE_EXTRACTED_TEXT_AGGREGATE_PERMISSIONS, "role1,read,role2,update",
+            Options.WRITE_EXTRACTED_TEXT_AGGREGATE_KEEP_DOCUMENT, "true");
     }
 
     @Test
@@ -184,13 +190,19 @@ class ImportFilesOptionsTest extends AbstractOptionsTest {
             .extractedTextAggregateElement(null, "div")
             .extractedTextAggregateAttribute("class", "sheet")
             .extractedTextAggregateUriAttribute("id")
-            .extractedTextAggregateEnvelope();
+            .extractedTextAggregateEnvelope()
+            .extractedTextAggregateCollections("r1")
+            .extractedTextAggregatePermissionsString("role1,read")
+            .extractedTextAggregateKeepDocument();
         Map<String, String> options = params.makeOptions();
         assertOptions(options,
             Options.WRITE_EXTRACTED_TEXT_AGGREGATE_ELEMENT, "div",
             Options.WRITE_EXTRACTED_TEXT_AGGREGATE_ATTRIBUTE, "class=sheet",
             Options.WRITE_EXTRACTED_TEXT_AGGREGATE_URI_ATTRIBUTE, "id",
-            Options.WRITE_EXTRACTED_TEXT_AGGREGATE_ENVELOPE, "true");
+            Options.WRITE_EXTRACTED_TEXT_AGGREGATE_ENVELOPE, "true",
+            Options.WRITE_EXTRACTED_TEXT_AGGREGATE_COLLECTIONS, "r1",
+            Options.WRITE_EXTRACTED_TEXT_AGGREGATE_PERMISSIONS, "role1,read",
+            Options.WRITE_EXTRACTED_TEXT_AGGREGATE_KEEP_DOCUMENT, "true");
         assertFalse(options.containsKey(Options.WRITE_EXTRACTED_TEXT_AGGREGATE_NAMESPACE),
             "A null namespace lets the connector default to XHTML");
     }

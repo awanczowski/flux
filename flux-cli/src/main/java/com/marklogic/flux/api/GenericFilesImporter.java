@@ -81,6 +81,23 @@ public interface GenericFilesImporter extends Executor<GenericFilesImporter> {
          * Wrap each record in an envelope containing the source URI, record index, and extracted metadata.
          */
         WriteGenericDocumentsOptions extractedTextAggregateEnvelope();
+
+        /**
+         * @param commaDelimitedCollections collections for each record; defaults to the collections for the source document
+         */
+        WriteGenericDocumentsOptions extractedTextAggregateCollections(String commaDelimitedCollections);
+
+        /**
+         * @param rolesAndCapabilities permissions for each record, e.g. role1,read,role2,update; defaults to the
+         *                             permissions for the source document
+         */
+        WriteGenericDocumentsOptions extractedTextAggregatePermissionsString(String rolesAndCapabilities);
+
+        /**
+         * Also write the full extracted text document, with each record linking to it. By default, the records replace
+         * the full extracted text document.
+         */
+        WriteGenericDocumentsOptions extractedTextAggregateKeepDocument();
     }
 
     GenericFilesImporter from(Consumer<ReadGenericFilesOptions> consumer);

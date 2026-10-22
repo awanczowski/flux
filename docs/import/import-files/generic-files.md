@@ -196,13 +196,23 @@ The following options control how records are produced:
 | `--extracted-text-aggregate-namespace` | Namespace of the record element; defaults to the XHTML namespace. |
 | `--extracted-text-aggregate-attribute` | Only elements having this exact attribute value, given as `name=value`, are records. Without it, Tika's `<div class="package-entry">` elements for embedded files would also become records. |
 | `--extracted-text-aggregate-uri-attribute` | Use the value of this attribute in each record URI instead of the record's position. The value must be present and unique within each file, otherwise an error is thrown. |
-| `--extracted-text-aggregate-envelope` | Wrap each record in an envelope containing `source-uri` (unless `--extracted-text-drop-source` is used), `record-index`, the record under `content`, and `extracted-metadata`. |
+| `--extracted-text-aggregate-envelope` | Wrap each record in an envelope containing `source-uri`, `record-index`, the record under `content`, and `extracted-metadata`. |
+| `--extracted-text-aggregate-collections` | Comma-delimited collections for each record; defaults to the value of `--collections`. |
+| `--extracted-text-aggregate-permissions` | Comma-delimited roles and capabilities for each record; defaults to the value of `--permissions`. |
+| `--extracted-text-aggregate-keep-document` | Also write the full extracted text document, and link each record to it. |
 
-Records replace the single extracted text document. Each record has a URI of `{sourceUri}-extracted-{position}.xml`,
-with position starting at 1, or `{sourceUri}-extracted-{attributeValue}.xml` when
-`--extracted-text-aggregate-uri-attribute` is used. Records receive the `--extracted-text-collections` and
-`--extracted-text-permissions` values. Without the envelope, each record document is the record element itself, such as
-`<div xmlns="http://www.w3.org/1999/xhtml" class="sheet">`.
+By default, records replace the single extracted text document. Each record has a URI of
+`{sourceUri}-extracted-{position}.xml`, with position starting at 1, or `{sourceUri}-extracted-{attributeValue}.xml` when
+`--extracted-text-aggregate-uri-attribute` is used. Unlike the full extracted text document, records default to the
+`--collections` and `--permissions` values of the source file. Without the envelope, each record document is the record
+element itself, such as `<div xmlns="http://www.w3.org/1999/xhtml" class="sheet">`.
+
+Every record links back to the file it was extracted from - even when `--extracted-text-drop-source` is used - via a
+`source-uri` metadata value, and a `source-uri` element in the envelope. With `--extracted-text-aggregate-keep-document`,
+the full extracted text document is also written, and each record has an `extracted-text-uri` metadata value and
+envelope element containing that document's URI. Like the records, the kept full document defaults to the
+`--collections` and `--permissions` values, unless `--extracted-text-collections` or `--extracted-text-permissions` are
+specified.
 
 The record options require `--extracted-text-format html` and `--extracted-text-document-type XML`, and cannot be
 combined with the `--splitter-*` options. If no element matches in a file, a warning is logged and the single extracted
@@ -211,11 +221,13 @@ text document is written for that file instead.
 When a classifier is configured with the `--classifier-*` options, each record is classified individually by Semaphore.
 The text of each record is sent as one article in a multi-article request, batched according to
 `--classifier-batch-size`, and the response is added as a `classification` element in that record's envelope. The file
-as a whole is not sent to Semaphore when records are produced. Because a record without an envelope has no place to
+as a whole is only sent to Semaphore when `--extracted-text-aggregate-keep-document` is used, so that the full extracted
+text document is classified as well. Because a record without an envelope has no place to
 hold its classification, `--extracted-text-aggregate-envelope` is required when a classifier is configured.
 
 The Java API provides the same options via `extractedTextAggregateElement`, `extractedTextAggregateAttribute`,
-`extractedTextAggregateUriAttribute`, and `extractedTextAggregateEnvelope`.
+`extractedTextAggregateUriAttribute`, `extractedTextAggregateEnvelope`, `extractedTextAggregateCollections`,
+`extractedTextAggregatePermissionsString`, and `extractedTextAggregateKeepDocument`.
 
 If you do not want Flux to write the file to a separate document but only want the extracted text document written,
 include the following option:
