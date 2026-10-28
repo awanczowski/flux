@@ -61,4 +61,12 @@ public interface ClassifierOptions {
      * @param additionalOptions Additional options for configuring the behavior of the classifier service.
      */
     ClassifierOptions additionalOptions(Map<String, String> additionalOptions);
+
+    /**
+     * Send metadata identifying each record or chunk - its source path, file name, and index - to the classifier as
+     * META elements in each article. The classifier returns them with the classification of each article.
+     *
+     * @since 2.1.2
+     */
+    ClassifierOptions articleMetadata();
 }

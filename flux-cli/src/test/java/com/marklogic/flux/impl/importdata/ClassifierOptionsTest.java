@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class ClassifierOptionsTest extends AbstractOptionsTest {
@@ -61,6 +62,33 @@ class ClassifierOptionsTest extends AbstractOptionsTest {
         ClassifierParams params = (ClassifierParams) reference.get();
         assertFalse(params.makeOptions().containsKey(Options.WRITE_CLASSIFIER_CONNECTION_TIMEOUT),
             "When no connection timeout is configured, the option key should be absent so the Spark connector uses its default.");
+    }
+
+    @Test
+    void articleMetadata() {
+        AtomicReference<ClassifierOptions> reference = new AtomicReference<>();
+        Flux.importGenericFiles()
+            .to(options -> options.classifier(classifierOptions -> {
+                classifierOptions.host("h").articleMetadata();
+                reference.set(classifierOptions);
+            }));
+        assertEquals("true", ((ClassifierParams) reference.get()).makeOptions().get(Options.WRITE_CLASSIFIER_ARTICLE_METADATA));
+
+        ImportFilesCommand command = (ImportFilesCommand) getCommand("import-files",
+            "--connection-string", "user:password@host:8001",
+            "--path", "anywhere",
+            "--classifier-host", "h",
+            "--classifier-article-metadata");
+        assertEquals("true", command.getWriteParams().makeOptions().get(Options.WRITE_CLASSIFIER_ARTICLE_METADATA));
+    }
+
+    @Test
+    void articleMetadataNotIncludedByDefault() {
+        ImportFilesCommand command = (ImportFilesCommand) getCommand("import-files",
+            "--connection-string", "user:password@host:8001",
+            "--path", "anywhere",
+            "--classifier-host", "h");
+        assertFalse(command.getWriteParams().makeOptions().containsKey(Options.WRITE_CLASSIFIER_ARTICLE_METADATA));
     }
 
     @Test

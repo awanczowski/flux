@@ -44,6 +44,7 @@ The table below lists each of the options used to configure how the classifier i
 | `--classifier-socket-timeout`     | Set the socket timeout in seconds for classification requests. Defaults to 10. |
 | `--classifier-connection-timeout` | Set the connection timeout in seconds for classification requests. Defaults to 10. |
 | `--classifier-prop key=value` | Specify additional options for configuring the behavior of the classifier service. |
+| `--classifier-article-metadata` | Send metadata identifying each record or chunk to the classifier with its text; see below. |
 
 As an example, the following options - applicable to any import command - would result in the text of each document
 to be written to MarkLogic having classification added to it, generated via Semaphore:
@@ -83,3 +84,20 @@ which requires logging in to the Semaphore portal, provides a list of the option
 
 As Flux uses the "multi-article" support for configuring batch processing, you should not set either the
 `singlearticle` or `multiarticle` options.
+
+## Identifying each article sent to the classifier
+
+When text is split into chunks, or extracted text is split into records, each chunk or record is sent to the classifier
+as a separate article. Requests contain only the text of each article by default. Include the following option to also
+send metadata identifying each article:
+
+    --classifier-article-metadata
+
+Each article then includes `META` elements named `source-path` (the original URI of the file or document, before any
+`--uri-*` options are applied), `file-name` (the last segment of that URI), and `record-index` or `chunk-index` (the
+1-based position of the record or chunk). The classifier returns these `META` elements with the classification of each
+article, so each stored classification identifies the file and record or chunk it was generated for. Whether they also
+influence the classification depends on the rules configured in Semaphore; by default, they do not.
+
+The option does not apply to documents classified as a whole, as the classifier already receives the document's URI as
+its file name in that case.

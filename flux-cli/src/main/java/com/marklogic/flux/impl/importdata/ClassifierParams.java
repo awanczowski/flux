@@ -73,6 +73,13 @@ public class ClassifierParams implements ClassifierOptions {
     )
     private Map<String, String> additionalOptions = new HashMap<>();
 
+    @CommandLine.Option(
+        names = "--classifier-article-metadata",
+        description = "Send metadata identifying each record or chunk - its source path, file name, and index - to the " +
+            "classifier as META elements in each article; the classifier returns them with each classification."
+    )
+    private boolean articleMetadata;
+
     public Map<String, String> makeOptions() {
         Map<String, String> options = new HashMap<>();
         if (host != null) {
@@ -85,7 +92,8 @@ public class ClassifierParams implements ClassifierOptions {
                 Options.WRITE_CLASSIFIER_TOKEN_PATH, tokenPath,
                 Options.WRITE_CLASSIFIER_BATCH_SIZE, OptionsUtil.integerOption(batchSize),
                 Options.WRITE_CLASSIFIER_SOCKET_TIMEOUT, OptionsUtil.integerOption(socketTimeoutSeconds),
-                Options.WRITE_CLASSIFIER_CONNECTION_TIMEOUT, OptionsUtil.integerOption(connectionTimeoutSeconds)
+                Options.WRITE_CLASSIFIER_CONNECTION_TIMEOUT, OptionsUtil.integerOption(connectionTimeoutSeconds),
+                Options.WRITE_CLASSIFIER_ARTICLE_METADATA, articleMetadata ? "true" : null
             );
             if (additionalOptions != null) {
                 additionalOptions.entrySet().forEach(entry -> options.put(
@@ -152,6 +160,12 @@ public class ClassifierParams implements ClassifierOptions {
     @Override
     public ClassifierOptions additionalOptions(Map<String, String> additionalOptions) {
         this.additionalOptions = additionalOptions;
+        return this;
+    }
+
+    @Override
+    public ClassifierOptions articleMetadata() {
+        this.articleMetadata = true;
         return this;
     }
 }
