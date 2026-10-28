@@ -244,6 +244,12 @@ When writing Tika metadata to the extracted text document, Flux will attempt to 
 on the name of the metadata key. For example, a Tika metadata key that begins with `pdf:` will result in an element
 assigned to the `http://ns.adobe.com/pdf/1.3/` namespace.
 
+Metadata keys that are not valid XML names - such as custom document properties with spaces in their names, like
+`custom:My Property` - have each invalid character replaced with an underscore, and an
+underscore prefixed if the name does not start with a letter or underscore. The original key is then retained in a
+`key` attribute, e.g. `<custom-My_Property key="custom:My Property">`.
+Characters in metadata values that are not allowed in XML are replaced with the Unicode replacement character.
+
 ### Assigning metadata to extracted text documents
 
 Collections can be assigned to extracted text documents via the following option, which accepts a comma-delimited list
